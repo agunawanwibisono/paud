@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayo Nikmati Dunia Asik Rumah untuk Belajar </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root { --space-dark: #020617; --neon-blue: #00d2ff; }
+        body { font-family: 'Fredoka', sans-serif; background: var(--space-dark); color: #f8fafc; overflow: hidden; height: 100vh; margin: 0; }
+        
+        /* BINTANG BERGERAK */
+        #starCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; }
+
+        /* PLANET MENGAPUNG */
+        .planet-container { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 600px; z-index: -5; display: flex; items: center; justify-content: center; animation: floating 6s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translate(-50%, -52%); } 50% { transform: translate(-50%, -48%); } }
+        .planet-core { width: 260px; height: 260px; background: radial-gradient(circle at 30% 30%, #ffffff 0%, #00d2ff 20%, #6366f1 50%, #1e1b4b 100%); border-radius: 50%; box-shadow: 0 0 80px rgba(0, 210, 255, 0.9); }
+
+        /* UI COMPONENTS */
+        .glass-card { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border-radius: 40px; border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .btn-yellow { background: #facc15; color: #854d0e; box-shadow: 0 8px 0 #ca8a04; transition: all 0.1s; border-radius: 24px; }
+        .btn-yellow:active { transform: translateY(4px); box-shadow: 0 4px 0 #ca8a04; }
+
+        /* ROKET GRID PRESISI (312px = 6 x 52px) */
+        #grid-roket { 
+            width: 312px; height: 312px; position: relative; 
+            display: grid; grid-template-columns: repeat(6, 52px); grid-template-rows: repeat(6, 52px);
+            background: rgba(15, 23, 42, 0.8); border: 2px solid rgba(255,255,255,0.1); border-radius: 15px; overflow: hidden;
+        }
+        .grid-cell { width: 52px; height: 52px; border: 0.5px solid rgba(255,255,255,0.03); }
+        .meteor { position: absolute; width: 52px; height: 52px; display: flex; items: center; justify-content: center; font-size: 1.8rem; filter: drop-shadow(0 0 8px red); animation: pulse 1s infinite alternate; z-index: 10; }
+        #sprite-roket { position: absolute; width: 52px; height: 52px; display: flex; items: center; justify-content: center; font-size: 2.2rem; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 30; }
+        #goal-roket { position: absolute; width: 52px; height: 52px; display: flex; items: center; justify-content: center; font-size: 2rem; z-index: 5; left: 260px; top: 260px; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(0.8); opacity: 0.7; } }
+
+        /* LAINNYA */
+        .slot { width: 65px; height: 85px; border: 3px dashed rgba(0, 210, 255, 0.6); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: bold; background: rgba(0, 210, 255, 0.05); position: relative; }
+        .slot-filled { border: 3px solid #ffffff; background: rgba(0, 210, 255, 0.4); border-style: solid; }
+        .huruf-card { width: 60px; height: 80px; background: white; color: #0f172a; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: bold; cursor: grab; box-shadow: 0 6px 0 #cbd5e1; }
+        .hewan-bayangan { filter: brightness(0); transition: all 1s ease; }
+        .puzzle-tile { aspect-ratio: 1/1; background: #1e293b; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; cursor: pointer; border: 2px solid rgba(255,255,255,0.1); transition: 0.3s; }
+        .puzzle-tile.flipped { background: #00d2ff; transform: rotateY(180deg); color: white; }
+    </style>
+</head>
+<body>
+
+    <canvas id="starCanvas"></canvas>
+    <div id="planet-bg" class="planet-container"><div class="planet-core"></div></div>
+
+    <!-- 1. LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-6 text-center">
+        <div class="w-full max-w-md glass-card p-12">
+            <div class="mb-6 flex justify-center">
+                <div class="w-40 h-40 rounded-full border-8 border-cyan-500 overflow-hidden bg-white animate-bounce">
+                    <img src="img/ndaru.png" class="w-full h-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=Ndaru'">
+                </div>
+            </div>
+            <h1 class="text-4xl font-bold mb-2 text-cyan-400">Ayo Nikmati Dunia Asik Rumah untuk Belajar</h1>
+            <p class="mb-8 text-cyan-100 uppercase tracking-widest text-sm font-bold">Petualangan Galaxy</p>
+            <input type="text" id="input-nama" placeholder="Siapa namamu?" class="w-full bg-slate-900 border-2 border-cyan-900 rounded-3xl p-5 text-center text-2xl text-white outline-none mb-10">
+            <button onclick="mulaiApp()" class="w-full btn-yellow text-3xl font-bold py-5 shadow-xl">LUNCURKAN! 🚀</button>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div id="main-app" class="hidden flex flex-col h-full">
+        <header class="p-4 flex justify-between items-center z-10">
+            <div onclick="pindahHalaman('dashboard')" class="flex items-center gap-4 bg-slate-900/60 p-2 pr-6 rounded-full border border-slate-700 cursor-pointer hover:bg-slate-800 transition">
+                <div class="w-12 h-12 bg-white rounded-full overflow-hidden border-2 border-cyan-500">
+                    <img src="img/ndaru.png" class="w-full h-full object-cover">
+                </div>
+                <h2 id="user-nama" class="font-bold text-white text-xl">Nama</h2>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white px-6 py-3 rounded-full font-bold text-xl shadow-lg border border-indigo-400">⭐ <span id="star-count">0</span></div>
+                <button onclick="location.reload()" class="bg-red-500 text-white p-3 rounded-2xl shadow-lg font-bold">Logout</button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-6 z-10 flex flex-col items-center">
+            
+            <!-- DASHBOARD -->
+            <section id="page-dashboard" class="page-content block w-full max-w-2xl text-center">
+                <h1 class="text-3xl font-bold mb-10 text-white">Pilih Misimu!</h1>
+                <div class="grid grid-cols-2 gap-6">
+                    <div onclick="pindahHalaman('belajar')" class="glass-card p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-all">
+                        <span class="text-6xl mb-4">🦁</span><span class="text-xl font-bold">HEWAN</span>
+                    </div>
+                    <div onclick="pindahHalaman('roket')" class="glass-card p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-all">
+                        <span class="text-6xl mb-4">🚀</span><span class="text-xl font-bold">ROKET</span>
+                    </div>
+                    <div onclick="pindahHalaman('puzzle')" class="glass-card p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-all">
+                        <span class="text-6xl mb-4">🧩</span><span class="text-xl font-bold">PUZZLE</span>
+                    </div>
+                    <div onclick="pindahHalaman('hitung')" class="glass-card p-8 flex flex-col items-center cursor-pointer hover:scale-105 transition-all">
+                        <span class="text-6xl mb-4">🍎</span><span class="text-xl font-bold">HITUNG</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GAME ROKET -->
+            <section id="page-roket" class="page-content hidden w-full max-w-md text-center">
+                <div class="glass-card p-6 flex flex-col items-center">
+                    <div class="w-full flex justify-between mb-4 font-bold text-cyan-400 text-xs uppercase">
+                        <span id="roket-lvl-text">LEVEL 1</span><span>TUJUAN: 🏁</span>
+                    </div>
+                    <div id="grid-roket">
+                        <div id="goal-roket">🏁</div>
+                        <div id="sprite-roket">🚀</div>
+                        <div id="meteor-box"></div>
+                        <script>for(let i=0; i<36; i++) document.write('<div class="grid-cell"></div>');</script>
+                    </div>
+                    <div id="cmd-preview" class="flex gap-2 justify-center my-4 min-h-[50px] w-full flex-wrap p-2 bg-black/40 rounded-xl border border-white/10"></div>
+                    <div class="grid grid-cols-5 gap-2 mb-6 w-full">
+                        <button onclick="addCmd('up')" class="bg-slate-800 p-4 rounded-xl text-xl">⬆️</button>
+                        <button onclick="addCmd('down')" class="bg-slate-800 p-4 rounded-xl text-xl">⬇️</button>
+                        <button onclick="addCmd('left')" class="bg-slate-800 p-4 rounded-xl text-xl">⬅️</button>
+                        <button onclick="addCmd('right')" class="bg-slate-800 p-4 rounded-xl text-xl">➡️</button>
+                        <button onclick="delCmd()" class="bg-red-900/60 p-4 rounded-xl text-white font-bold text-xl">❌</button>
+                    </div>
+                    <button onclick="runRoket()" id="run-btn" class="w-full bg-green-500 py-5 rounded-3xl text-2xl font-bold mb-6">LUNCURKAN! 🚀</button>
+                    <button onclick="pindahHalaman('dashboard')" class="text-slate-400 font-bold">🏠 Kembali ke Menu</button>
+                </div>
+            </section>
+
+            <!-- GAME HEWAN -->
+            <section id="page-belajar" class="page-content hidden w-full max-w-2xl text-center">
+                <div class="glass-card p-8">
+                    <div class="h-44 flex items-center justify-center mb-8"><img id="hewan-img" src="" class="hewan-bayangan h-40 w-auto object-contain"></div>
+                    <div id="jawaban-container" class="flex gap-3 justify-center mb-10 flex-wrap"></div>
+                    <div id="huruf-acak-container" class="flex gap-4 justify-center flex-wrap p-4 bg-slate-900/40 rounded-3xl min-h-[100px] w-full mb-8"></div>
+                    <button onclick="pindahHalaman('dashboard')" class="text-slate-400 font-bold">🏠 Kembali ke Menu</button>
+                </div>
+            </section>
+
+            <!-- GAME PUZZLE -->
+            <section id="page-puzzle" class="page-content hidden w-full max-w-md text-center">
+                <div class="glass-card p-6">
+                    <h2 id="puzzle-level-text" class="text-cyan-400 font-bold mb-4 uppercase">Level 1</h2>
+                    <div id="puzzle-board" class="grid gap-3 mx-auto mb-8"></div>
+                    <button onclick="pindahHalaman('dashboard')" class="text-slate-400 font-bold">🏠 Kembali ke Menu</button>
+                </div>
+            </section>
+
+            <!-- GAME HITUNG -->
+            <section id="page-hitung" class="page-content hidden w-full max-w-md text-center">
+                <div class="glass-card p-8 flex flex-col items-center">
+                    <h2 class="text-cyan-400 font-bold mb-8 uppercase">Hitung Buahnya! 🍎</h2>
+                    <div class="bg-slate-900/50 p-6 rounded-3xl w-full mb-8">
+                        <div id="math-fruit1" class="flex gap-2 justify-center flex-wrap text-4xl min-h-[50px]"></div>
+                        <div class="text-white text-4xl font-bold my-4">+</div>
+                        <div id="math-fruit2" class="flex gap-2 justify-center flex-wrap text-4xl min-h-[50px]"></div>
+                    </div>
+                    <div id="math-options" class="grid grid-cols-3 gap-4 w-full mb-8"></div>
+                    <button onclick="pindahHalaman('dashboard')" class="text-slate-400 font-bold">🏠 Kembali ke Menu</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        /* CORE STARS ENGINE */
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        function initStars() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 200; i++) stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, speed: Math.random()*2+0.5, size: Math.random()*2 });
+        }
+        function drawStars() {
+            ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = "white";
+            stars.forEach(s => { s.y += s.speed; if (s.y > canvas.height) s.y = 0; ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill(); });
+            requestAnimationFrame(drawStars);
+        }
+        initStars(); drawStars();
+        function bicara(teks) { const p = new SpeechSynthesisUtterance(teks); p.lang = 'id-ID'; window.speechSynthesis.speak(p); }
+
+        /* LOGIC APP */
+        let namaUser = "", skor = 0;
+        function mulaiApp() {
+            const inp = document.getElementById('input-nama');
+            if(!inp.value) return alert("Siapa namamu?");
+            namaUser = inp.value; document.getElementById('user-nama').innerText = namaUser;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            pindahHalaman('dashboard'); bicara(`Halo Kapten ${namaUser}!`);
+        }
+
+        function pindahHalaman(id) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.add('hidden'));
+            document.getElementById('page-' + id).classList.remove('hidden');
+            if(id === 'belajar') initBelajar();
+            if(id === 'roket') initRoket();
+            if(id === 'puzzle') initPuzzle();
+            if(id === 'hitung') initHitung();
+        }
+
+        /* GAME ROKET */
+        let rPos = {x:0, y:0}, rCmds = [], rLvl = 1, rMeteors = [], isFlying = false;
+        const CELL = 52; 
+        function initRoket() {
+            rPos = {x:0, y:0}; rCmds = []; isFlying = false;
+            document.getElementById('cmd-preview').innerHTML = "";
+            document.getElementById('roket-lvl-text').innerText = "Level " + rLvl;
+            document.getElementById('run-btn').disabled = false;
+            const mBox = document.getElementById('meteor-box'); mBox.innerHTML = "";
+            rMeteors = [];
+            let mCount = Math.min(rLvl + 2, 12);
+            for(let i=0; i<mCount; i++) {
+                let mx, my;
+                do { mx=Math.floor(Math.random()*6); my=Math.floor(Math.random()*6); } 
+                while((mx==0 && my==0) || (mx==5 && my==5) || rMeteors.some(m => m.x==mx && m.y==my));
+                rMeteors.push({x: mx, y: my});
+                const mel = document.createElement('div'); mel.className = "meteor";
+                mel.style.left = (mx * CELL) + "px"; mel.style.top = (my * CELL) + "px";
+                mel.innerText = "☄️"; mBox.appendChild(mel);
+            }
+            updateRoketUI();
+        }
+        function addCmd(d) {
+            if(!isFlying && rCmds.length < 12) {
+                rCmds.push(d);
+                const el = document.createElement('div'); el.className = "w-8 h-8 bg-cyan-500 rounded flex items-center justify-center text-sm";
+                const map = {up:'⬆️', down:'⬇️', left:'⬅️', right:'➡️'};
+                el.innerText = map[d]; document.getElementById('cmd-preview').appendChild(el);
+            }
+        }
+        function delCmd() { rCmds = []; document.getElementById('cmd-preview').innerHTML = ""; rPos = {x:0, y:0}; updateRoketUI(); }
+        async function runRoket() {
+            if(rCmds.length === 0 || isFlying) return;
+            isFlying = true; document.getElementById('run-btn').disabled = true;
+            for(let c of rCmds) {
+                if(c=='up' && rPos.y > 0) rPos.y--; else if(c=='down' && rPos.y < 5) rPos.y++;
+                else if(c=='left' && rPos.x > 0) rPos.x--; else if(c=='right' && rPos.x < 5) rPos.x++;
+                updateRoketUI();
+                if(rMeteors.some(m => m.x === rPos.x && m.y === rPos.y)) { 
+                    bicara("Aduh, kena meteor! Balik lagi."); 
+                    await new Promise(r => setTimeout(r, 600)); rPos = {x:0, y:0}; updateRoketUI(); break; 
+                }
+                await new Promise(r => setTimeout(r, 600));
+            }
+            if(rPos.x === 5 && rPos.y === 5) {
+                confetti(); bicara("Hore! Misi Berhasil! Kamu hebat!");
+                skor += 50; updateUI(); rLvl++; setTimeout(initRoket, 2000);
+            } else {
+                bicara("Yah, belum sampai!"); isFlying = false; document.getElementById('run-btn').disabled = false;
+                rCmds = []; document.getElementById('cmd-preview').innerHTML = "";
+            }
+        }
+        function updateRoketUI() { const s = document.getElementById('sprite-roket'); s.style.left = (rPos.x * CELL) + "px"; s.style.top = (rPos.y * CELL) + "px"; }
+
+        /* GAME HEWAN */
+        const hData = [{img:'img/singa.png', k:'SINGA'}, {img:'img/panda.png', k:'PANDA'}, {img:'img/gajah.png', k:'GAJAH'}, {img:'img/sapi.png', k:'SAPI'}, {img:'img/anjing.png', k:'ANJING'}, {img:'img/kucing.png', k:'KUCING'}];
+        function initBelajar() {
+            let h = hData[Math.floor(Math.random()*hData.length)];
+            document.getElementById('hewan-img').src = h.img; document.getElementById('hewan-img').className = "hewan-bayangan h-40 w-auto object-contain";
+            const sBox = document.getElementById('jawaban-container'); sBox.innerHTML = "";
+            const hBox = document.getElementById('huruf-acak-container'); hBox.innerHTML = "";
+            let state = new Array(h.k.length).fill(null);
+            for(let i=0; i<h.k.length; i++){
+                const s = document.createElement('div'); s.className = "slot"; s.innerHTML = `<span style="opacity:0.1">${h.k[i]}</span>`;
+                s.ondragover = (e) => e.preventDefault();
+                s.ondrop = (e) => {
+                    const char = e.dataTransfer.getData("text"); const elId = e.dataTransfer.getData("elId");
+                    if(char === h.k[i] && !state[i]) {
+                        s.innerText = char; s.classList.add('slot-filled'); state[i] = char; bicara(char);
+                        document.getElementById(elId).style.display = 'none';
+                        if(state.join('') === h.k) { confetti(); document.getElementById('hewan-img').className="h-40 w-auto object-contain"; skor += 20; updateUI(); setTimeout(initBelajar, 3000); }
+                    }
+                }
+                sBox.appendChild(s);
+            }
+            h.k.split('').map((c, i) => ({c, id: "h-"+i+"-"+Math.random()})).sort(()=>0.5-Math.random()).forEach(obj => {
+                const el = document.createElement('div'); el.id = obj.id; el.className="huruf-card"; el.innerText = obj.c; el.draggable = true;
+                el.ondragstart = (e) => { e.dataTransfer.setData("text", obj.c); e.dataTransfer.setData("elId", obj.id); };
+                hBox.appendChild(el);
+            });
+        }
+
+        /* PUZZLE & HITUNG */
+        let pLvl = 1;
+        function initPuzzle() {
+            const board = document.getElementById('puzzle-board'); board.innerHTML = "";
+            document.getElementById('puzzle-level-text').innerText = "Level " + pLvl;
+            let pairs = pLvl + 1; if(pairs > 8) pairs = 8;
+            board.style.gridTemplateColumns = `repeat(${pairs <= 3 ? pairs : (pairs === 4 ? 2 : (pairs <= 6 ? 3 : 4))}, 1fr)`;
+            let icons = ['🦁','🐼','🐘','🐄','🐸','🐶','🐱','🐷'].slice(0, pairs);
+            let cards = [...icons, ...icons].sort(()=>0.5-Math.random());
+            let flipped = [], matched = 0;
+            cards.forEach(val => {
+                const el = document.createElement('div'); el.className = "puzzle-tile"; el.innerText = "?";
+                el.onclick = () => {
+                    if(flipped.length < 2 && !el.classList.contains('flipped')) {
+                        el.innerText = val; el.classList.add('flipped'); flipped.push({val, el});
+                        if(flipped.length === 2) {
+                            if(flipped[0].val === flipped[1].val) { matched++; flipped = []; if(matched === pairs) { confetti(); skor += 30; pLvl++; updateUI(); setTimeout(initPuzzle, 2000); } }
+                            else { setTimeout(() => { flipped.forEach(f => { f.el.innerText = "?"; f.el.classList.remove('flipped'); }); flipped = []; }, 700); }
+                        }
+                    }
+                };
+                board.appendChild(el);
+            });
+        }
+
+        function initHitung() {
+            const fruits = ['🍎','🍓','🍌','🍇','🍊'];
+            const f = fruits[Math.floor(Math.random()*fruits.length)];
+            const n1 = Math.floor(Math.random()*5)+1, n2 = Math.floor(Math.random()*4)+1, ans = n1+n2;
+            const b1 = document.getElementById('math-fruit1'); const b2 = document.getElementById('math-fruit2');
+            b1.innerHTML = ""; b2.innerHTML = "";
+            for(let i=0; i<n1; i++) b1.innerHTML += f;
+            for(let i=0; i<n2; i++) b2.innerHTML += f;
+            const opt = document.getElementById('math-options'); opt.innerHTML = "";
+            [ans, ans+1, ans-1].filter(v=>v>0).sort(()=>0.5-Math.random()).forEach(v => {
+                const b = document.createElement('button'); b.className="glass-card p-6 text-4xl font-bold"; b.innerText=v;
+                b.onclick = () => { if(v==ans) { confetti(); bicara("Betul! Kamu hebat!"); skor+=15; updateUI(); initHitung(); } else bicara("Salah!"); };
+                opt.appendChild(b);
+            });
+        }
+
+        function updateUI() { document.getElementById('star-count').innerText = skor; }
+    </script>
+</body>
+</html>
