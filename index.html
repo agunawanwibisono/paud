@@ -331,23 +331,71 @@
             setTimeout(initRoket, 1500);
         };
 
-        // --- GAME HITUNG (FIXED) ---
+        // --- GAME HITUNG (QUANTUM CALCULUS) - FIXED VERSION ---
         function initHitung() {
-            const a=Math.floor(Math.random()*5)+1, b=Math.floor(Math.random()*4)+1, res=a+b;
-            const d=document.getElementById('math-display'); d.innerHTML="";
-            for(let i=0; i<a; i++) d.innerHTML+="🍎";
-            d.innerHTML+=" + ";
-            for(let i=0; i<b; i++) d.innerHTML+="🍎";
-            const oBox = document.getElementById('math-options'); oBox.innerHTML = "";
-            let opts = [res, res+1, res-1, res+2].filter(v => v > 0);
-            opts = [...new Set(opts)].sort(()=>Math.random()-0.5).slice(0,3);
-            opts.forEach(v => {
-                const b = document.createElement('button'); b.className="hud-card p-4 text-3xl font-bold active:scale-90 transition"; b.innerText=v;
-                b.onclick=()=>{ 
-                    if(v===res){ confetti(); state.skor+=10; updateUI(); suara("Pintar!"); initHitung(); }
-                    else suara("Coba lagi");
+            // 1. Tentukan angka random (1-5 agar tidak terlalu banyak untuk layar HP)
+            const a = Math.floor(Math.random() * 5) + 1;
+            const b = Math.floor(Math.random() * 5) + 1;
+            const hasilBenar = a + b;
+
+            const display = document.getElementById('math-display');
+            display.innerHTML = ""; // Kosongkan tampilan
+            display.className = "flex items-center justify-center gap-4 mb-8";
+
+            // Fungsi untuk membuat grup buah + angka di bawahnya
+            const buatBlokHitung = (jumlah, simbol) => {
+                let kumpulanBuah = "";
+                for(let i=0; i < jumlah; i++) kumpulanBuah += simbol;
+                
+                return `
+                    <div class="flex flex-col items-center">
+                        <div class="text-2xl mb-1 tracking-tight h-12 flex items-center justify-center">${kumpulanBuah}</div>
+                        <div class="bg-cyan-500/20 text-neon px-3 py-1 rounded-lg border border-cyan-500/50 text-xl font-bold">
+                            ${jumlah}
+                        </div>
+                    </div>
+                `;
+            };
+
+            // 2. Tampilkan Visual (Buah A + Buah B)
+            display.innerHTML = `
+                ${buatBlokHitung(a, "🍎")}
+                <div class="text-3xl font-bold text-neon mt-8">+</div>
+                ${buatBlokHitung(b, "🍎")}
+            `;
+
+            // 3. Logika Pilihan Jawaban (3 Pilihan Unik)
+            const oBox = document.getElementById('math-options');
+            oBox.innerHTML = "";
+            
+            let pilihan = new Set([hasilBenar]); 
+            while(pilihan.size < 3) {
+                let salah = hasilBenar + (Math.floor(Math.random() * 5) - 2); 
+                if(salah > 0 && salah !== hasilBenar) pilihan.add(salah);
+            }
+
+            // Acak urutan pilihan dan buat tombolnya
+            Array.from(pilihan).sort(() => Math.random() - 0.5).forEach(angka => {
+                const btn = document.createElement('button');
+                btn.className = "hud-card p-5 text-3xl font-bold hover:scale-105 active:scale-95 transition-all border-2 border-cyan-900";
+                btn.innerText = angka;
+                
+                btn.onclick = () => { 
+                    if(angka === hasilBenar) { 
+                        confetti(); 
+                        state.skor += 10; 
+                        updateUI(); 
+                        suara(`Pintar! ${a} ditambah ${b} adalah ${hasilBenar}`); 
+                        // Beri efek hijau kilat sebelum lanjut
+                        btn.classList.add('bg-green-500/50');
+                        setTimeout(initHitung, 1500); 
+                    } else { 
+                        suara("Coba hitung lagi"); 
+                        btn.classList.add('border-red-500', 'animate-pulse');
+                        setTimeout(() => btn.classList.remove('border-red-500', 'animate-pulse'), 1000);
+                    }
                 };
-                oBox.appendChild(b);
+                oBox.appendChild(btn);
             });
         }
 
